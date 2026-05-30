@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+javafx-lib/
+performance/k6-summary.json
+performance/results.jtl
+performance/jmeter-report/

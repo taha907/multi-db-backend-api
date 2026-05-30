@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot - GamerMatch",
+      "request": "launch",
+      "mainClass": "com.gamermatch.GamerMatchApplication",
+      "projectName": "gamermatch"
+    },
+    {
+      "type": "java",
+      "name": "JavaFX - GamerMatch GUI",
+      "request": "launch",
+      "mainClass": "com.gamermatch.gui.GamerMatchGuiApp",
+      "projectName": "gamermatch",
+      "preLaunchTask": "Prepare JavaFX libs",
+      "vmArgs": "--module-path \"${workspaceFolder}/javafx-lib\" --add-modules javafx.controls,javafx.graphics"
+    }
+  ]
+}
