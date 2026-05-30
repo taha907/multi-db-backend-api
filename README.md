@@ -2,8 +2,6 @@
 
  Yüksek Performanslı Eşleştirme için Dağıtık Veri Mimarisi V1
 
-**Docker gerekmez.** JDBC (H2), Redis ve MongoDB uygulama acilirken otomatik baslar.
-
 ## Klasor yapisi
 
 ```
