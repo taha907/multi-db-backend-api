@@ -2,16 +2,6 @@
 
 A Dockerized advanced Java project for player matchmaking, team and tournament management, and match reporting. The system combines a Spring Boot REST API, JavaFX desktop UI, JDBC/H2, Redis, MongoDB, and load-test documentation.
 
-## Features
-
-- REST API for users, teams, tournaments, matchmaking, and match reports
-- JavaFX desktop client with custom Canvas drawings
-- JDBC/H2 layer for relational data
-- Redis layer for matchmaking queue and lobby data
-- MongoDB layer for flexible match report documents
-- Centralized API response model and exception handling
-- k6 and JMeter performance test scenarios
-- Docker Compose setup for API, Redis, and MongoDB
 
 ## Tech Stack
 
