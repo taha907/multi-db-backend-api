@@ -1,40 +1,54 @@
-# Proje Raporu (v1)
+# Proje Raporu
 
 **Proje:** GamerMatch  
-**Ders:** TBL324 Ileri Java Uygulamalari
+**Ders:** TBL324 İleri Java Uygulamaları
 
-## Amac
+## Amaç
 
-E-spor oyuncu eslestirme, turnuva ve mac istatistik platformu (backend + JavaFX istemci).
+GamerMatch; e-spor oyuncuları için kullanıcı yönetimi, takım/turnuva yönetimi, matchmaking kuyruğu ve maç istatistik raporu sunan bir Java uygulamasıdır. Proje Spring Boot REST API ile veri katmanlarını yönetir, JavaFX istemciyle masaüstü arayüz sağlar.
 
-## Veri katmanlari (Docker yok)
+## Veri katmanları
 
-| Paket | Motor | Aciklama |
+| Paket | Motor | Açıklama |
 |-------|-------|----------|
-| jdbc | H2 + JdbcTemplate | Kullanici, takim, turnuva (SQL) |
-| redis | Gomulu Redis | Mac ara kuyrugu (NoSQL) |
-| mongo | Gomulu MongoDB | Mac raporu (NoSQL, JSON) |
+| `jdbc` | H2 + JdbcTemplate | Kullanıcı, takım ve turnuva verileri |
+| `redis` | Redis | Maç arama kuyruğu ve geçici lobi verileri |
+| `mongo` | MongoDB | Esnek JSON maç raporları |
 
-Uc katman ayri paketlerde; birbirine karismaz.
+Veri katmanları ayrı paketlerde tutulmuştur. SQL kayıtları JDBC ile, NoSQL verileri Redis ve MongoDB ile yönetilir.
 
-## Zorunlu kriterler
+## Zorunlu kriter karşılığı
 
-- API & Back-end: REST `/api/*`
-- Generic: `ApiResponse<T>`, `PagedList<T>`
-- Custom GUI: JavaFX + Canvas cizimleri
-- JDBC & NoSQL: jdbc / redis / mongo
-- SOLID: Service arayuzleri, Strategy pattern
-- Hata yonetimi: 400, 404, 500
-- Performans: `performance/` klasoru
-- Dokuman: bu dosya + ARCHITECTURE.md
+| Kriter | Projedeki karşılığı |
+|--------|---------------------|
+| API & Backend | Spring Boot REST endpoint'leri: `/api/users`, `/api/teams`, `/api/tournaments`, `/api/matchmaking`, `/api/match-reports` |
+| Generic yapılar | `ApiResponse<T>` ve `PagedList<T>` |
+| Custom GUI | JavaFX arayüz, `QueueCanvas` ve `TournamentBracketCanvas` custom çizimleri |
+| JDBC & NoSQL | JDBC/H2, Redis ve MongoDB katmanları |
+| SOLID & OOP | Servis arayüzleri, repository ayrımı ve Strategy pattern |
+| Hata yönetimi | `GlobalExceptionHandler` ile 400, 404 ve 500 cevapları |
+| Performans testleri | `performance/k6-load-test.js`, `performance/jmeter-gamermatch.jmx` ve `docs/PERFORMANCE_REPORT.md` |
+| Analiz & doküman | Markdown raporları ve Mermaid mimari diyagramı |
 
-## Calistirma
+## Dockerize sistem
 
-Sadece `GamerMatchApplication` calistir. Redis ve Mongo ayri kurulmaz.
+Proje kök dizinindeki `docker-compose.yml` dosyası API, Redis ve MongoDB servislerini birlikte başlatır:
 
-## API
+```powershell
+docker compose up --build
+```
 
-- GET /api/health
-- /api/users, /api/teams, /api/tournaments (jdbc)
-- /api/matchmaking/* (redis)
-- /api/match-reports (mongo)
+API konteyneri ortam değişkenleriyle Redis ve MongoDB servislerine bağlanır:
+
+- `REDIS_HOST=redis`
+- `REDIS_PORT=6379`
+- `MONGODB_URI=mongodb://mongo:27017/gamermatch`
+
+## API özeti
+
+- `GET /api/health`
+- `GET|POST /api/users`
+- `GET|POST /api/teams`
+- `GET|POST /api/tournaments`
+- `/api/matchmaking/*`
+- `/api/match-reports/*`

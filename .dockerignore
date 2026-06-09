@@ -1,13 +1,9 @@
 target/
+.git/
 .idea/
-*.iml
-.classpath
-.project
-.settings/
-.DS_Store
+.vscode/
 javafx-lib/
 performance/k6-summary.json
 performance/results.jtl
 performance/jmeter-report/
-not.txt
-README.md
+*.iml

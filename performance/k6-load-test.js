@@ -1,8 +1,10 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, fail, sleep } from 'k6';
 
-// GamerMatch API yuk testi - calistirmadan once: mvn spring-boot:run
+// GamerMatch API yuk testi.
+// Once API'yi baslatin: docker compose up --build
 // Komut: k6 run performance/k6-load-test.js
+// Farkli adres icin: k6 run -e BASE_URL=http://localhost:8080 performance/k6-load-test.js
 
 export const options = {
   stages: [
@@ -16,7 +18,14 @@ export const options = {
   },
 };
 
-const BASE = 'http://localhost:8080';
+const BASE = __ENV.BASE_URL || 'http://localhost:8080';
+
+export function setup() {
+  const health = http.get(`${BASE}/api/health`, { timeout: '5s' });
+  if (health.status !== 200) {
+    fail(`API calismiyor veya ${BASE}/api/health cevap vermiyor. Once 'docker compose up --build' ile sistemi baslatin.`);
+  }
+}
 
 export default function () {
   let health = http.get(`${BASE}/api/health`);
