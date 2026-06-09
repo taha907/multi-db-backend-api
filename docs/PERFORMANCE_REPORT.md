@@ -9,7 +9,8 @@
 
 - Tarih: 9 Haziran 2026
 - İşletim sistemi: Windows
-- API adresi: `http://localhost:8080`
+- Test adresi: `http://localhost:8080`
+- Trafik girişi: `gateway-service`
 - Sağlık kontrolü: `GET /api/health` başarılı
 - Test edilen endpoint'ler:
   - `GET /api/health`
@@ -59,6 +60,8 @@ Bu makinede `jmeter` komutu PATH üzerinde bulunmadığı için JMeter testi ça
 
 ## Değerlendirme
 
-k6 testi sırasında tüm HTTP istekleri beklenen 200 cevaplarını döndürdü. Hata oranı 0% olarak ölçüldü ve p95 cevap süresi 3.59 ms ile tanımlı `p(95)<2000` eşik değerinin oldukça altında kaldı.
+k6 testi `localhost:8080` üzerindeki gateway katmanına istek gönderir. Gateway, `/api/health`, `/api/users` ve `/api/tournaments` isteklerini ilgili mikroservislere yönlendirir.
+
+Önceki ölçümde tüm HTTP istekleri beklenen 200 cevaplarını döndürdü. Hata oranı 0% olarak ölçüldü ve p95 cevap süresi 3.59 ms ile tanımlı `p(95)<2000` eşik değerinin oldukça altında kaldı.
 
 JMeter dosyası projede yer almaktadır; ancak testin gerçekten çalıştırılması için JMeter'ın kurulu olduğu bir ortam gerekir.

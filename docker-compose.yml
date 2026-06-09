@@ -1,16 +1,69 @@
 services:
-  api:
-    build: .
-    container_name: gamermatch-api
+  gateway-service:
+    build: ./services/gateway-service
+    container_name: gamermatch-gateway-service
     environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      MONGODB_URI: mongodb://mongo:27017/gamermatch
+      USER_SERVICE_URL: http://user-service:8081
+      TOURNAMENT_SERVICE_URL: http://tournament-service:8082
+      MATCHMAKING_SERVICE_URL: http://matchmaking-service:8083
+      REPORT_SERVICE_URL: http://report-service:8084
     ports:
       - "8080:8080"
     depends_on:
+      - user-service
+      - tournament-service
+      - matchmaking-service
+      - report-service
+
+  user-service:
+    build: ./services/user-service
+    container_name: gamermatch-user-service
+    environment:
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    expose:
+      - "8081"
+
+  tournament-service:
+    build: ./services/tournament-service
+    container_name: gamermatch-tournament-service
+    environment:
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    expose:
+      - "8082"
+
+  matchmaking-service:
+    build: ./services/matchmaking-service
+    container_name: gamermatch-matchmaking-service
+    environment:
+      SERVER_PORT: 8083
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      USER_SERVICE_URL: http://user-service:8081
+    ports:
+      - "8083:8083"
+    expose:
+      - "8083"
+    depends_on:
       redis:
         condition: service_healthy
+      user-service:
+        condition: service_started
+
+  report-service:
+    build: ./services/report-service
+    container_name: gamermatch-report-service
+    environment:
+      SERVER_PORT: 8084
+      MONGODB_URI: mongodb://mongo:27017/gamermatch
+    ports:
+      - "8084:8084"
+    expose:
+      - "8084"
+    depends_on:
       mongo:
         condition: service_healthy
 

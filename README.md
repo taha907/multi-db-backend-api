@@ -1,114 +1,128 @@
 # GamerMatch
 
-A Dockerized advanced Java project for player matchmaking, team and tournament management, and match reporting. The system combines a Spring Boot REST API, JavaFX desktop UI, JDBC/H2, Redis, MongoDB, and load-test documentation.
+GamerMatch; oyuncu eşleştirme, takım/turnuva yönetimi ve maç raporlama için geliştirilmiş ileri Java projesidir. Proje artık **mikroservis mimarisi** ve **gateway** yapısı ile Docker Compose üzerinde çalışacak şekilde düzenlenmiştir.
 
+## Mikroservis ve Gateway Farkı
 
-## Tech Stack
+Mikroservis mimarisi, tek bir monolitik API yerine iş alanlarını ayrı Spring Boot servislerine böler. Bu projede kullanıcı/takım, turnuva, matchmaking ve raporlama ayrı servislerdir.
 
-| Area | Technology |
-|------|------------|
-| Language | Java 17 |
+Gateway ise dışarıdan gelen tüm istekleri karşılayan giriş kapısıdır. Kullanıcı veya k6 testi sadece gateway'e istek atar; gateway isteği doğru mikroservise yönlendirir.
+
+```text
+Kullanıcı / k6
+     |
+     v
+Gateway Service :8080
+     |
+     +--> User Service :8081
+     +--> Tournament Service :8082
+     +--> Matchmaking Service :8083
+     +--> Report Service :8084
+```
+
+## Servisler
+
+| Servis | Port | Görev | Veri Katmanı |
+|--------|------|-------|--------------|
+| `gateway-service` | 8080 | Tüm `/api/**` trafiğini yönlendirir | Yok |
+| `user-service` | 8081 | Kullanıcı ve takım yönetimi | JDBC + H2 |
+| `tournament-service` | 8082 | Turnuva yönetimi | JDBC + H2 |
+| `matchmaking-service` | 8083 | Oyuncu kuyruğu ve lobi oluşturma | Redis |
+| `report-service` | 8084 | Maç raporları | MongoDB |
+| `redis` | 6379 | Kuyruk ve geçici lobi verisi | Redis RAM |
+| `mongo` | 27017 | Maç raporu dokümanları | Docker volume |
+
+Matchmaking servisi, oyuncuyu kuyruğa almadan önce `user-service` üzerinden JSON/HTTP ile kullanıcı kontrolü yapar. Bu servisler arası haberleşmeyi gösterir.
+
+## Teknolojiler
+
+| Alan | Teknoloji |
+|------|-----------|
+| Dil | Java 17 |
 | Backend | Spring Boot |
-| Desktop UI | JavaFX |
+| Gateway | Spring Cloud Gateway |
+| Masaüstü arayüz | JavaFX |
 | SQL | JDBC + H2 |
 | NoSQL | Redis, MongoDB |
 | Build | Maven |
-| Performance | k6, JMeter |
-| Containerization | Docker Compose |
+| Performans | k6, JMeter |
+| Container | Docker Compose |
 
-## Architecture
-
-```mermaid
-flowchart TB
-    GUI["JavaFX GUI"] --> API["Spring Boot REST API"]
-    API --> JDBC["JDBC / H2"]
-    API --> REDIS["Redis Queue"]
-    API --> MONGO["MongoDB Reports"]
-
-    subgraph Docker["Docker Compose"]
-      API
-      REDIS
-      MONGO
-    end
-```
-
-## Project Structure
+## Proje Yapısı
 
 ```text
-src/main/java/com/gamermatch/
-  common/    shared API response, paging, health, exception handling
-  jdbc/      users, teams, tournaments
-  redis/     matchmaking queue and lobby storage
-  mongo/     match report documents
-  gui/       JavaFX UI and custom Canvas components
-docs/        architecture, project, and performance reports
-performance/ k6 and JMeter test files
+services/
+  gateway-service/       Spring Cloud Gateway
+  user-service/          Kullanıcı ve takım API
+  tournament-service/    Turnuva API
+  matchmaking-service/   Redis tabanlı eşleştirme API
+  report-service/        MongoDB tabanlı rapor API
+
+src/main/java/           Eski monolitik uygulama ve JavaFX istemci
+docs/                    Mimari ve performans raporları
+performance/             k6 ve JMeter testleri
 ```
 
-## Run With Docker
+Eski monolitik kaynak kodu korunmuştur. Mikroservis mimarisi `services/` klasörü altında ayrı uygulamalar olarak kurulmuştur.
 
-Start the API, Redis, and MongoDB together:
+## Docker ile Çalıştırma
+
+Docker Desktop açık olmalıdır.
 
 ```powershell
 docker compose up --build
 ```
 
-Run in the background:
+Arka planda çalıştırmak için:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Check service status:
+Servisleri görmek için:
 
 ```powershell
 docker compose ps
 ```
 
-Stop the system:
+Logları izlemek için:
+
+```powershell
+docker compose logs -f gateway-service
+```
+
+Sistemi durdurmak için:
 
 ```powershell
 docker compose down
 ```
 
-Remove containers and MongoDB volume data:
+MongoDB volume verisini de silmek için:
 
 ```powershell
 docker compose down -v
 ```
 
-## Data Storage
+## Docker'da Veri Nerede Saklanır?
 
-| Data | Docker behavior |
-|------|-----------------|
-| H2 SQL data | In-memory inside the API container; resets when API restarts |
-| Redis data | In-memory inside the Redis container; resets when Redis restarts |
-| MongoDB data | Stored in Docker volume `mongo-data`; persists after `docker compose down` |
+| Veri | Saklama Davranışı |
+|------|-------------------|
+| H2 kullanıcı/takım verisi | Servis belleğinde, servis yeniden başlayınca sıfırlanır |
+| H2 turnuva verisi | Servis belleğinde, servis yeniden başlayınca sıfırlanır |
+| Redis kuyruk verisi | Redis container RAM'inde, container kapanınca sıfırlanır |
+| MongoDB rapor verisi | `mongo-data` Docker volume içinde kalıcı tutulur |
 
-When the project is started with Docker Compose, it uses the Redis and MongoDB containers defined in `docker-compose.yml`, not local Redis or MongoDB services installed on the host machine.
+Docker ile çalıştırıldığında proje local bilgisayardaki Redis veya MongoDB servislerini kullanmaz. Docker Compose içindeki `redis` ve `mongo` container'larına bağlanır. RAM ve CPU yine bilgisayarından tüketilir, fakat servisler izole container'lar içinde çalışır.
 
-## Health Check
+## Gateway Üzerinden Test
+
+Gateway dışarıya `localhost:8080` olarak açılır.
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/health
 ```
 
-Expected response:
-
-```json
-{
-  "success": true,
-  "message": "OK",
-  "data": {
-    "status": "UP",
-    "app": "GamerMatch"
-  }
-}
-```
-
-## API Examples
-
-Create a user:
+Kullanıcı oluştur:
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/users `
@@ -116,13 +130,21 @@ Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/users `
   -Body '{"username":"ali","email":"ali@test.com","password":"1234","gameRank":"Gold"}'
 ```
 
-List users:
+Kullanıcıları listele:
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/users
 ```
 
-Join matchmaking queue:
+Turnuva oluştur:
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/tournaments `
+  -ContentType "application/json" `
+  -Body '{"name":"Bahar Kupası","game":"VALORANT"}'
+```
+
+Matchmaking kuyruğuna gir:
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/matchmaking/join `
@@ -130,65 +152,59 @@ Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/matchmaking/join `
   -Body '{"playerId":"1","game":"VALORANT","rank":"Gold"}'
 ```
 
-Create a match:
+Not: Matchmaking servisi `playerId` değerini `user-service` üzerinden kontrol eder. Bu yüzden önce kullanıcı oluşturulmalıdır.
+
+## Localde Docker Olmadan Çalıştırma
+
+Bu yapı sadece Docker'a bağlı değildir. Her mikroservis localde kendi portunda çalışabilir.
+
+Örnek:
 
 ```powershell
-Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/matchmaking/match/VALORANT
+cd services/user-service
+mvn spring-boot:run
 ```
 
-Create a tournament:
+Diğer servisler:
 
-```powershell
-Invoke-RestMethod -Method POST -Uri http://localhost:8080/api/tournaments `
-  -ContentType "application/json" `
-  -Body '{"name":"Spring Cup","game":"VALORANT"}'
+```text
+gateway-service       8080
+user-service          8081
+tournament-service    8082
+matchmaking-service   8083
+report-service        8084
 ```
 
-## Performance Test
+Local çalıştırmada Redis `localhost:6379`, MongoDB `localhost:27017` üzerinde açık olmalıdır.
 
-Run the k6 load test after the API is running:
+## Performans Testi
+
+API Docker veya local olarak çalışırken:
 
 ```powershell
 k6 run performance/k6-load-test.js
 ```
 
-The k6 script first checks `/api/health`. If the API is not running on `localhost:8080`, it fails early with a clear message.
+Test gateway'e, yani `http://localhost:8080` adresine istek atar.
 
-### k6 Test Output
+![k6 test çıktısı](docs/k6-test-output.svg)
 
-![k6 load test output](docs/k6-test-output.svg)
+Son ölçülen k6 sonucu:
 
-Latest measured k6 result:
+| Metrik | Sonuç |
+|--------|-------|
+| Toplam HTTP isteği | 1767 |
+| Başarılı check | 1767 |
+| Hatalı check | 0 |
+| Hata oranı | 0% |
+| Ortalama cevap süresi | 1.76 ms |
+| p95 cevap süresi | 3.59 ms |
+| İstek hızı | 44.09 req/s |
 
-| Metric | Result |
-|--------|--------|
-| Total HTTP requests | 1767 |
-| Successful checks | 1767 |
-| Failed checks | 0 |
-| Error rate | 0% |
-| Average response time | 1.76 ms |
-| p95 response time | 3.59 ms |
-| Max response time | 19.22 ms |
-| Request rate | 44.09 req/s |
+Detaylı rapor: [docs/PERFORMANCE_REPORT.md](docs/PERFORMANCE_REPORT.md)
 
-Detailed report: [docs/PERFORMANCE_REPORT.md](docs/PERFORMANCE_REPORT.md)
+## Dokümanlar
 
-## JMeter
-
-The JMeter scenario is available at:
-
-```text
-performance/jmeter-gamermatch.jmx
-```
-
-Run it with:
-
-```powershell
-jmeter -n -t performance/jmeter-gamermatch.jmx -l performance/results.jtl
-```
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [Project Report](docs/PROJECT_REPORT.md)
-- [Performance Report](docs/PERFORMANCE_REPORT.md)
+- [Mimari](docs/ARCHITECTURE.md)
+- [Proje Raporu](docs/PROJECT_REPORT.md)
+- [Performans Raporu](docs/PERFORMANCE_REPORT.md)

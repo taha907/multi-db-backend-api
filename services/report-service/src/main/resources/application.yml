@@ -1,0 +1,10 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: report-service
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gamermatch}
